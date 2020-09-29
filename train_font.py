@@ -47,7 +47,9 @@ if __name__ == '__main__':
     parser.add_argument('--train_transform_func_name', type=str, default='get_train_transforms',
                         # get_train_transforms_normal
                         required=False)  # func or gen_param.json
-
+    parser.add_argument('--val_transform_func_name', type=str, default='get_val_transforms',
+                        # get_train_transforms_normal
+                        required=False)  # func or gen_param.json
     parser.add_argument('--num_sample_each_class', type=int, default=1000)
 
     parser.add_argument('--min_num_chars', type=int, default=1)
