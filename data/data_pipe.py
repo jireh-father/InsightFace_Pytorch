@@ -9,8 +9,7 @@ import numpy as np
 import cv2
 import bcolz
 import pickle
-import torch
-import mxnet as mx
+
 from tqdm import tqdm
 import random
 
@@ -60,6 +59,7 @@ def get_train_loader(conf, train_transforms=None):
 
 
 def load_bin(path, rootdir, transform, image_size=[112, 112]):
+    import mxnet as mx
     if not rootdir.exists():
         rootdir.mkdir()
     bins, issame_list = pickle.load(open(path, 'rb'), encoding='bytes')
@@ -186,6 +186,7 @@ def get_val_data(data_path):
 
 
 def load_mx_rec(rec_path):
+    import mxnet as mx
     save_path = rec_path / 'imgs'
     if not save_path.exists():
         save_path.mkdir()
