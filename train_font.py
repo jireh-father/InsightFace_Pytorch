@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument("--not_use_pos", default=True, action='store_false')
     parser.add_argument("--not_use_neg", default=True, action='store_false')
 
+    parser.add_argument('--work_path', type=str, default=None, required=False)
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--benchmark', default=False, action="store_true")
 
