@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     for arg in vars(args):
         print(arg, getattr(args, arg))
-        conf[arg] = getattr(args, arg)
+        setattr(conf, arg, getattr(args, arg))
 
     if args.net_mode == 'mobilefacenet':
         conf.use_mobilfacenet = True
