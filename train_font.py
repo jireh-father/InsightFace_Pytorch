@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    conf = get_config()
+    conf = dict(get_config())
     conf.update(args)
 
     if args.net_mode == 'mobilefacenet':
