@@ -91,6 +91,10 @@ if __name__ == '__main__':
         print(arg, getattr(args, arg))
         setattr(conf, arg, getattr(args, arg))
 
+    conf.model_path = conf.work_path / 'models'
+    conf.log_path = conf.work_path / 'log'
+    conf.save_path = conf.work_path / 'save'
+
     if args.net_mode == 'mobilefacenet':
         conf.use_mobilfacenet = True
     else:
