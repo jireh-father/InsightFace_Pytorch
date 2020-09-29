@@ -44,16 +44,21 @@ class face_learner(object):
             paras_only_bn, paras_wo_bn = separate_bn_paras(self.model)
 
             if conf.use_mobilfacenet:
-                self.optimizer = optim.SGD([
+                params = [
                     {'params': paras_wo_bn[:-1], 'weight_decay': 4e-5},
                     {'params': [paras_wo_bn[-1]] + [self.head.kernel], 'weight_decay': 4e-4},
                     {'params': paras_only_bn}
-                ], lr=conf.lr, momentum=conf.momentum)
+                ]
             else:
-                self.optimizer = optim.SGD([
+                params = [
                     {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
                     {'params': paras_only_bn}
-                ], lr=conf.lr, momentum=conf.momentum)
+                ]
+
+            if conf.optimizer == 'sgd':
+                self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum)
+            elif conf.optimizer == 'adam':
+                self.optimizer = optim.Adam(params, lr=conf.lr)
             print(self.optimizer)
             #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
 

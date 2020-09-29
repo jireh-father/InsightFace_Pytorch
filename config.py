@@ -13,6 +13,7 @@ def get_config(training = True):
     conf.save_path = conf.work_path/'save'
     conf.input_size = [112,112]
     conf.embedding_size = 512
+    conf.optimizer = 'sgd'
     conf.use_mobilfacenet = False
     conf.net_depth = 50
     conf.drop_ratio = 0.6

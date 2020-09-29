@@ -84,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('--only_use_pixel_transform', default=False, action="store_true")
     parser.add_argument('--use_blur', default=False, action="store_true")
     parser.add_argument('--use_flip', default=False, action="store_true")
+    parser.add_argument('--optimizer', default='sgd', type=str)
 
     args = parser.parse_args()
     conf = get_config()
