@@ -73,8 +73,8 @@ class face_learner(object):
                                                                             conf.val_pin_memory,
                                                                             conf.num_workers,
                                                                             val_transforms=val_transforms,
-                                                                            use_pos=conf.use_pos_val,
-                                                                            use_neg=conf.use_neg_val)
+                                                                            use_pos=not conf.not_use_pos,
+                                                                            use_neg=not conf.not_use_neg)
                     self.val_dataloaders[val_name] = [val_dataloader, common_val_issame]
             else:
                 self.agedb_30, self.cfp_fp, self.lfw, self.agedb_30_issame, self.cfp_fp_issame, self.lfw_issame = get_val_data(
