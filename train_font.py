@@ -82,9 +82,11 @@ if __name__ == '__main__':
     parser.add_argument('--use_flip', default=False, action="store_true")
 
     args = parser.parse_args()
+    conf = get_config()
 
-    conf = dict(get_config())
-    conf.update(args)
+    for arg in vars(args):
+        print(arg, getattr(args, arg))
+        conf[arg] = getattr(args, arg)
 
     if args.net_mode == 'mobilefacenet':
         conf.use_mobilfacenet = True
