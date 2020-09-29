@@ -7,10 +7,6 @@ import pdb
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import pretrainedmodels
-
-from src import utils
 from metric_learning import ArcMarginProduct, AddMarginProduct, AdaCos
 import cirtorch
 
