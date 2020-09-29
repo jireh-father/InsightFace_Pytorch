@@ -1,12 +1,12 @@
 import sys
 from torch.utils.data import Dataset
 import os
-from util import text_image_maker
+import text_image_maker
 import random
-from util.text_image_param_parser import TextImageParamParser
+from text_image_param_parser import TextImageParamParser
 
 import traceback
-from dataset.hook_dataloader import HookDataset
+from data.hook_dataloader import HookDataset
 import cv2
 import numpy as np
 
