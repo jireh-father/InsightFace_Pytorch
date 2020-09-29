@@ -5,11 +5,11 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='for face verification')
-    parser.add_argument("-r", "--rec_path", help="mxnet record file path",default='faces_emore', type=str)
+    parser.add_argument("-r", "--rec_path", help="mxnet record file path",default='/media/irelin/data_disk/dataset/face_recognition', type=str)
     args = parser.parse_args()
     conf = get_config()
     rec_path = conf.data_path/args.rec_path
-    load_mx_rec(rec_path)
+    # load_mx_rec(rec_path)
     
     bin_files = ['agedb_30', 'cfp_fp', 'lfw', 'calfw', 'cfp_ff', 'cplfw', 'vgg2_fp']
     

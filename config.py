@@ -29,7 +29,8 @@ def get_config(training = True):
     conf.batch_size = 100 # irse net depth 50 
 #   conf.batch_size = 200 # mobilefacenet
 #--------------------Training Config ------------------------    
-    if training:        
+    if training:
+        conf.train_img_dir = None
         conf.log_path = conf.work_path/'log'
         conf.save_path = conf.work_path/'save'
     #     conf.weight_decay = 5e-4
