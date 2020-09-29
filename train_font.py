@@ -8,6 +8,7 @@ import json
 import gen_params, transforms
 from data.online_dataset import OnlineFontDataset
 from data.hook_dataloader import HookDataLoader
+from pathlib import Path
 
 # python train.py -net mobilefacenet -b 200 -w 4
 
@@ -91,6 +92,7 @@ if __name__ == '__main__':
         print(arg, getattr(args, arg))
         setattr(conf, arg, getattr(args, arg))
 
+    conf.work_path = Path(conf.work_path)
     conf.model_path = conf.work_path / 'models'
     conf.log_path = conf.work_path / 'log'
     conf.save_path = conf.work_path / 'save'
