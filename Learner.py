@@ -24,7 +24,12 @@ class face_learner(object):
             self.model = MobileFaceNet(conf.embedding_size).to(conf.device)
             print('MobileFaceNet model generated')
         else:
-            self.model = Backbone(conf.net_depth, conf.drop_ratio, conf.net_mode).to(conf.device)
+            if conf.net_mode in ['ir', 'ir_se']:
+                self.model = Backbone(conf.net_depth, conf.drop_ratio, conf.net_mode).to(conf.device)
+            elif conf.net_mode.startswith('efficientnet'):
+                self.model
+            else:
+                raise Exception("unknown model name", self.net_mode)
             print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
 
         if not inference:
@@ -260,28 +265,50 @@ class face_learner(object):
                     self.writer.add_scalar('train_loss', loss_board, self.step)
                     running_loss = 0.
 
-                if self.step % self.evaluate_every == 0 and self.step != 0:
-                    if conf.data_mode == 'common':
-                        for val_name in self.val_dataloaders:
-                            val_dataloader, val_issame = self.val_dataloaders[val_name]
-                            accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
-                                                                                                     val_dataloader,
-                                                                                                     val_issame)
-                            self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
-                    else:
-                        accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
-                                                                                   self.agedb_30_issame)
-                        self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
-                        accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
-                        self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
-                        accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
-                                                                                   self.cfp_fp_issame)
-                        self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
-                    self.model.train()
-                if self.step % self.save_every == 0 and self.step != 0:
-                    self.save_state(conf, accuracy)
+                # if self.step % self.evaluate_every == 0 and self.step != 0:
+                #     if conf.data_mode == 'common':
+                #         for val_name in self.val_dataloaders:
+                #             val_dataloader, val_issame = self.val_dataloaders[val_name]
+                #             accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                #                                                                                      val_dataloader,
+                #                                                                                      val_issame)
+                #             self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+                #     else:
+                #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                #                                                                    self.agedb_30_issame)
+                #         self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                #         self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                #                                                                    self.cfp_fp_issame)
+                #         self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+                #     self.model.train()
+                # if self.step % self.save_every == 0 and self.step != 0:
+                #     self.save_state(conf, accuracy)
 
                 self.step += 1
+
+            accuracies = []
+            if conf.data_mode == 'common':
+                for val_name in self.val_dataloaders:
+                    val_dataloader, val_issame = self.val_dataloaders[val_name]
+                    accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                                                                                             val_dataloader,
+                                                                                             val_issame)
+                    accuracies.append(accuracy)
+                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+            else:
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                                                                           self.agedb_30_issame)
+                self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                                                                           self.cfp_fp_issame)
+                self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+            self.model.train()
+
+            self.save_state(conf, sum(accuracies) / len(accuracies))
 
         self.save_state(conf, accuracy, to_save_folder=True, extra='final')
 
