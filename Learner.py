@@ -88,6 +88,7 @@ class face_learner(object):
         else:
             save_path = conf.model_path
         import os
+        print('save_path', save_path)
         os.makedirs(save_path, exist_ok=True)
         torch.save(
             self.model.state_dict(), save_path /
