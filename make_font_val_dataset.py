@@ -67,7 +67,7 @@ if __name__ == '__main__':
     font_size_range = args.font_size_range.split(",")
     font_size_range = list(range(int(font_size_range[0]), int(font_size_range[1]) + 1))
 
-    font_list = glob.glob(os.path.join(args.font_dir, "*"))
+    font_list = [os.path.join(args.font_dir, font_name) for font_name in json.load(open(args.font_list))]
     font_list.sort()
 
     feed_data = []
