@@ -6,8 +6,8 @@ import random
 from multiprocessing import Pool
 import traceback
 from PIL import Image
-from dataset.online_dataset import OnlineFontDataset
-from trainer import gen_params, transforms
+from data.online_dataset import OnlineFontDataset
+import gen_params, transforms
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
