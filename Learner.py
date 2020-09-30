@@ -53,7 +53,7 @@ class face_learner(object):
                                        use_fc=True,
                                        fc_dim=conf.embedding_size,
                                        dropout=conf.last_fc_dropout,
-                                       pretrained=conf.pretrained)
+                                       pretrained=conf.pretrained).to(conf.device)
                 print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
 
             if not inference:
