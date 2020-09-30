@@ -93,10 +93,16 @@ class face_learner(object):
                         {'params': paras_only_bn}
                     ]
                 else:
-                    params = [
-                        {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': conf.wd},  # 5e-4},
-                        {'params': paras_only_bn}
-                    ]
+                    if conf.net_mode in ['ir', 'ir_se']:
+                        params = [
+                            {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': # 5e-4},
+                            {'params': paras_only_bn}
+                        ]
+                    else:
+                        params = [
+                            {'params': paras_wo_bn + [self.head.weight], 'weight_decay': conf.wd},  # 5e-4},
+                            {'params': paras_only_bn}
+                        ]
 
                 if conf.optimizer == 'sgd':
                     self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum)
