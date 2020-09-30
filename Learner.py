@@ -72,15 +72,15 @@ class face_learner(object):
                 else:
                     if conf.loss_module == 'arcface':
                         self.head = ArcMarginProduct(self.model.final_in_features, self.class_num,
-                                                     s=conf.s, m=conf.margin, easy_margin=False, ls_eps=conf.ls_eps)
+                                                     s=conf.s, m=conf.margin, easy_margin=False, ls_eps=conf.ls_eps).to(conf.device)
                     elif conf.loss_module == 'cosface':
                         self.head = AddMarginProduct(self.model.final_in_features, self.class_num, s=conf.s,
-                                                     m=conf.margin)
+                                                     m=conf.margin).to(conf.device)
                     elif conf.loss_module == 'adacos':
                         self.head = AdaCos(self.model.final_in_features, self.class_num, m=conf.margin,
-                                           theta_zero=conf.theta_zero)
+                                           theta_zero=conf.theta_zero).to(conf.device)
                     else:
-                        self.head = nn.Linear(self.model.final_in_features, self.class_num)
+                        self.head = nn.Linear(self.model.final_in_features, self.class_num).to(conf.device)
 
                 print('two model heads generated')
 
