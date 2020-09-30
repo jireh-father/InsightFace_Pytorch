@@ -69,8 +69,7 @@ class MetricNet(nn.Module):
         nn.init.constant_(self.bn.bias, 0)
 
     def forward(self, x):
-        feature = self.extract_feat(x)
-        return self.final(feature)
+        return self.extract_feat(x)
 
     def extract_feat(self, x):
         batch_size = x.shape[0]
