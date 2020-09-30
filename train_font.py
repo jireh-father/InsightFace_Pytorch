@@ -86,6 +86,19 @@ if __name__ == '__main__':
     parser.add_argument('--use_flip', default=False, action="store_true")
     parser.add_argument('--optimizer', default='sgd', type=str)
 
+    parser.add_argument('--pooling', default='GeM', type=str)
+    parser.add_argument('--last_fc_dropout', type=float, default=0.0)
+    parser.add_argument('--pretrained', default=False, action="store_true")
+    parser.add_argument('--loss_module', default='arcface', type=str)
+
+    parser.add_argument('--s', type=float, default=30.0)
+    parser.add_argument('--margin', type=float, default=0.3)
+    parser.add_argument('--ls_eps', type=float, default=0.0)
+    parser.add_argument('--theta_zero', type=float, default=1.25)
+
+    parser.add_argument('--wd', type=float, default=1e-5)
+
+
     args = parser.parse_args()
     conf = get_config()
 
@@ -145,6 +158,7 @@ if __name__ == '__main__':
     font_list = [os.path.join(args.font_dir, font_name) for font_name in json.load(open(args.font_list))]
     font_list.sort()
     num_classes = len(font_list)
+    conf.num_classes = num_classes
 
     dataset = OnlineFontDataset(font_list, transform=train_transforms, generation_params=generation_params,
                                 bg_list=bg_list,
@@ -173,6 +187,6 @@ if __name__ == '__main__':
 
     val_transform_func = getattr(transforms, args.val_transform_func_name)
     val_transforms = val_transform_func(input_size=args.input_size, use_gray=args.use_gray)
-    learner = face_learner(conf, val_transforms=val_transforms, train_loader=train_loader, num_classes=num_classes)
+    learner = face_learner(conf, val_transforms=val_transforms, train_loader=train_loader)
 
     learner.train(conf, args.epochs)

@@ -1,5 +1,5 @@
 from data.data_pipe import de_preprocess, get_train_loader, get_val_data, get_common_val_data
-from model import Backbone, Arcface, MobileFaceNet, Am_softmax, l2_norm
+from model import Backbone, Arcface, MobileFaceNet, Am_softmax, l2_norm, MetricNet
 from verifacation import evaluate
 import torch
 from torch import optim
@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 from matplotlib import pyplot as plt
+import torch.nn as nn
 
 plt.switch_backend('agg')
 from utils import get_time, gen_plot, hflip_batch, separate_bn_paras
@@ -15,6 +16,7 @@ from torchvision import transforms as trans
 import math
 import bcolz
 import torchvision
+from metric_learning import ArcMarginProduct, AddMarginProduct, AdaCos
 
 
 def denormalize_image(img, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), is_tensor=True):
@@ -36,8 +38,7 @@ def denormalize_image(img, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), is_tensor=
 
 
 class face_learner(object):
-    def __init__(self, conf, inference=False, train_transforms=None, val_transforms=None, train_loader=None,
-                 num_classes=None):
+    def __init__(self, conf, inference=False, train_transforms=None, val_transforms=None, train_loader=None):
         print(conf)
         if conf.use_mobilfacenet:
             self.model = MobileFaceNet(conf.embedding_size).to(conf.device)
@@ -45,71 +46,89 @@ class face_learner(object):
         else:
             if conf.net_mode in ['ir', 'ir_se']:
                 self.model = Backbone(conf.net_depth, conf.drop_ratio, conf.net_mode).to(conf.device)
-            elif conf.net_mode.startswith('efficientnet'):
-                self.model
             else:
-                raise Exception("unknown model name", self.net_mode)
-            print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
-
-        if not inference:
-            self.milestones = conf.milestones
-            if train_loader is None:
-                self.loader, self.class_num = get_train_loader(conf, train_transforms)
-            else:
-                self.loader = train_loader
-                self.class_num = num_classes
-
-            self.writer = SummaryWriter(conf.log_path)
-            self.step = 0
-            self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
-
-            print('two model heads generated')
-
-            paras_only_bn, paras_wo_bn = separate_bn_paras(self.model)
-
-            if conf.use_mobilfacenet:
-                params = [
-                    {'params': paras_wo_bn[:-1], 'weight_decay': 4e-5},
-                    {'params': [paras_wo_bn[-1]] + [self.head.kernel], 'weight_decay': 4e-4},
-                    {'params': paras_only_bn}
-                ]
-            else:
-                params = [
-                    {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
-                    {'params': paras_only_bn}
-                ]
-
-            if conf.optimizer == 'sgd':
-                self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum)
-            elif conf.optimizer == 'adam':
-                self.optimizer = optim.Adam(params, lr=conf.lr)
-            print(self.optimizer)
-            #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
-
-            print('optimizers generated')
-            self.board_loss_every = len(self.loader) // 100
-            self.evaluate_every = len(self.loader) // 10
-            self.save_every = len(self.loader) // 5
-            if conf.data_mode == 'common':
                 import json
-                val_img_dir_map = json.loads(conf.val_img_dirs)
-                self.val_dataloaders = {}
-                for val_name in val_img_dir_map:
-                    val_img_dir = val_img_dir_map[val_name]
-                    val_dataloader, common_val_issame = get_common_val_data(val_img_dir,
-                                                                            conf.max_positive_cnt,
-                                                                            conf.val_batch_size,
-                                                                            conf.val_pin_memory,
-                                                                            conf.num_workers,
-                                                                            val_transforms=val_transforms,
-                                                                            use_pos=not conf.not_use_pos,
-                                                                            use_neg=not conf.not_use_neg)
-                    self.val_dataloaders[val_name] = [val_dataloader, common_val_issame]
+                self.model = MetricNet(model_name=conf.net_mode,
+                                       pooling=conf.pooling,
+                                       use_fc=True,
+                                       fc_dim=conf.embedding_size,
+                                       dropout=conf.last_fc_dropout,
+                                       pretrained=conf.pretrained)
+                print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
+
+            if not inference:
+                self.milestones = conf.milestones
+                if train_loader is None:
+                    self.loader, self.class_num = get_train_loader(conf, train_transforms)
+                else:
+                    self.loader = train_loader
+                    self.class_num = conf.num_classes
+
+                self.writer = SummaryWriter(conf.log_path)
+                self.step = 0
+
+                if conf.use_mobilfacenet or conf.net_mode in ['ir', 'ir_se']:
+                    self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
+                else:
+                    if conf.loss_module == 'arcface':
+                        self.head = ArcMarginProduct(self.model.final_in_features, self.class_num,
+                                                     s=conf.s, m=conf.margin, easy_margin=False, ls_eps=conf.ls_eps)
+                    elif conf.loss_module == 'cosface':
+                        self.head = AddMarginProduct(self.model.final_in_features, self.class_num, s=conf.s,
+                                                     m=conf.margin)
+                    elif conf.loss_module == 'adacos':
+                        self.head = AdaCos(self.model.final_in_features, self.class_num, m=conf.margin,
+                                           theta_zero=conf.theta_zero)
+                    else:
+                        self.head = nn.Linear(self.model.final_in_features, self.class_num)
+
+                print('two model heads generated')
+
+                paras_only_bn, paras_wo_bn = separate_bn_paras(self.model)
+
+                if conf.use_mobilfacenet:
+                    params = [
+                        {'params': paras_wo_bn[:-1], 'weight_decay': 4e-5},
+                        {'params': [paras_wo_bn[-1]] + [self.head.kernel], 'weight_decay': 4e-4},
+                        {'params': paras_only_bn}
+                    ]
+                else:
+                    params = [
+                        {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': conf.wd},  # 5e-4},
+                        {'params': paras_only_bn}
+                    ]
+
+                if conf.optimizer == 'sgd':
+                    self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum)
+                elif conf.optimizer == 'adam':
+                    self.optimizer = optim.Adam(params, lr=conf.lr)
+                print(self.optimizer)
+                #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
+
+                print('optimizers generated')
+                self.board_loss_every = len(self.loader) // 100
+                self.evaluate_every = len(self.loader) // 10
+                self.save_every = len(self.loader) // 5
+                if conf.data_mode == 'common':
+                    import json
+                    val_img_dir_map = json.loads(conf.val_img_dirs)
+                    self.val_dataloaders = {}
+                    for val_name in val_img_dir_map:
+                        val_img_dir = val_img_dir_map[val_name]
+                        val_dataloader, common_val_issame = get_common_val_data(val_img_dir,
+                                                                                conf.max_positive_cnt,
+                                                                                conf.val_batch_size,
+                                                                                conf.val_pin_memory,
+                                                                                conf.num_workers,
+                                                                                val_transforms=val_transforms,
+                                                                                use_pos=not conf.not_use_pos,
+                                                                                use_neg=not conf.not_use_neg)
+                        self.val_dataloaders[val_name] = [val_dataloader, common_val_issame]
+                else:
+                    self.agedb_30, self.cfp_fp, self.lfw, self.agedb_30_issame, self.cfp_fp_issame, self.lfw_issame = get_val_data(
+                        self.loader.dataset.root.parent)
             else:
-                self.agedb_30, self.cfp_fp, self.lfw, self.agedb_30_issame, self.cfp_fp_issame, self.lfw_issame = get_val_data(
-                    self.loader.dataset.root.parent)
-        else:
-            self.threshold = conf.threshold
+                self.threshold = conf.threshold
 
     def save_state(self, conf, accuracy, to_save_folder=False, extra=None, model_only=False):
         if to_save_folder:
@@ -127,7 +146,8 @@ class face_learner(object):
         if not model_only:
             torch.save(
                 self.head.state_dict(), save_path /
-                                        ('head_{}_accuracy:{}_step:{}_{}.pth'.format(get_time(), accuracy, self.step,
+                                        ('head_{}_accuracy:{}_step:{}_{}.pth'.format(get_time(), accuracy,
+                                                                                     self.step,
                                                                                      extra)))
             torch.save(
                 self.optimizer.state_dict(), save_path /
