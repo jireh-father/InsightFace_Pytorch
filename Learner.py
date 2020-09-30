@@ -14,6 +14,25 @@ from PIL import Image
 from torchvision import transforms as trans
 import math
 import bcolz
+import torchvision
+
+
+def denormalize_image(img, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), is_tensor=True):
+    max_pixel_value = 255.
+    mean = np.array(mean, dtype=np.float32)
+    mean *= max_pixel_value
+
+    std = np.array(std, dtype=np.float32)
+    std *= max_pixel_value
+    denominator = np.reciprocal(std, dtype=np.float32)
+    if is_tensor:
+        img = img.cpu().numpy()
+        img = np.transpose(img, (1, 2, 0))
+    img /= denominator
+    img += mean
+    if is_tensor:
+        img = img.astype(np.uint8)
+    return img
 
 
 class face_learner(object):
@@ -168,7 +187,14 @@ class face_learner(object):
         idx = 0
         embeddings = np.zeros([len(val_dataloader.dataset), conf.embedding_size])
         with torch.no_grad():
+            is_grid = False
             for imgs in tqdm(iter(val_dataloader)):
+                if not is_grid:
+                    is_grid = True
+                    grid = torchvision.utils.make_grid(imgs[:65])
+                    grid = denormalize_image(grid)
+                    self.writer.add_image('val_images', grid, self.step, dataformats='HWC')
+
                 embeddings[idx:idx + len(imgs)] = self.model(imgs.to(conf.device)).cpu()
                 idx += len(imgs)
         tpr, fpr, accuracy, best_thresholds = evaluate(embeddings, val_issame, nrof_folds)
@@ -264,6 +290,10 @@ class face_learner(object):
                     loss_board = running_loss / self.board_loss_every
                     self.writer.add_scalar('train_loss', loss_board, self.step)
                     running_loss = 0.
+
+                    grid = torchvision.utils.make_grid(imgs[:65])
+                    grid = denormalize_image(grid)
+                    self.writer.add_image('train_images', grid, self.step, dataformats='HWC')
 
                 # if self.step % self.evaluate_every == 0 and self.step != 0:
                 #     if conf.data_mode == 'common':
