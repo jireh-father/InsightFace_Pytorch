@@ -238,3 +238,17 @@ def get_val_transforms(input_size=224, use_gray=False):
                               al.Normalize(),
                               ToTensorV2()
                           ])
+
+
+def get_test_transforms(input_size, use_gray=False):
+    # return transforms.Compose([
+    #     transforms.Resize(input_size),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    # ])
+    return al.Compose([
+        al.SmallestMaxSize(input_size),
+        al.ToGray(p=1.0 if use_gray else 0.0),
+        al.Normalize(),
+        ToTensorV2()
+    ])
