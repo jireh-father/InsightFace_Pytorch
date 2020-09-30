@@ -275,7 +275,8 @@ class face_learner(object):
                 self.schedule_lr()
             if e == self.milestones[2]:
                 self.schedule_lr()
-            for imgs, labels in tqdm(iter(self.loader)):
+            # for imgs, labels in tqdm(iter(self.loader)):
+            for imgs, labels in self.loader:
                 imgs = imgs.to(conf.device)
                 labels = labels.to(conf.device)
                 self.optimizer.zero_grad()
@@ -294,7 +295,7 @@ class face_learner(object):
                     grid = torchvision.utils.make_grid(imgs[:65])
                     grid = denormalize_image(grid)
                     self.writer.add_image('train_images', grid, self.step, dataformats='HWC')
-
+                    print("epoch: {}, step: {}, loss: {}".format(e, self.step, loss_board))
                 # if self.step % self.evaluate_every == 0 and self.step != 0:
                 #     if conf.data_mode == 'common':
                 #         for val_name in self.val_dataloaders:
