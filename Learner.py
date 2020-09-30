@@ -92,22 +92,26 @@ class face_learner(object):
                         {'params': [paras_wo_bn[-1]] + [self.head.kernel], 'weight_decay': 4e-4},
                         {'params': paras_only_bn}
                     ]
+                    wd = 4e-5
                 else:
                     if conf.net_mode in ['ir', 'ir_se']:
                         params = [
                             {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
                             {'params': paras_only_bn}
                         ]
+                        wd = 5e-4
                     else:
-                        params = [
-                            {'params': paras_wo_bn + [self.head.weight], 'weight_decay': conf.wd},  # 5e-4},
-                            {'params': paras_only_bn}
-                        ]
+                        params = self.model.parameters()
+                        wd = conf.wd
+                        # params = [
+                        #     {'params': paras_wo_bn + [self.head.weight], 'weight_decay': conf.wd},  # 5e-4},
+                        #     {'params': paras_only_bn}
+                        # ]
 
                 if conf.optimizer == 'sgd':
-                    self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum)
+                    self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum, weight_decay=wd)
                 elif conf.optimizer == 'adam':
-                    self.optimizer = optim.Adam(params, lr=conf.lr)
+                    self.optimizer = optim.Adam(params, lr=conf.lr, weight_decay=wd)
                 print(self.optimizer)
                 #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
 
