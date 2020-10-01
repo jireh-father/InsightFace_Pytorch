@@ -143,7 +143,7 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
                         positive_files.append(label_files[i])
                         positive_files.append(label_files[j])
                         cur_cnt += 1
-                        if cur_cnt == each_cnt:
+                        if cur_cnt >= each_cnt:
                             raise
             except:
                 pass
