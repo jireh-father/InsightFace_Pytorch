@@ -375,6 +375,90 @@ class face_learner(object):
 
         self.save_state(conf, accuracy, to_save_folder=True, extra='final')
 
+    def train_font(self, conf, epochs):
+        self.model.train()
+        running_loss = 0.
+        for e in range(epochs):
+            if conf.train:
+                print('epoch {} started'.format(e))
+                if e == self.milestones[0]:
+                    self.schedule_lr()
+                if e == self.milestones[1]:
+                    self.schedule_lr()
+                if e == self.milestones[2]:
+                    self.schedule_lr()
+                # for imgs, labels in tqdm(iter(self.loader)):
+                for imgs, labels in self.loader:
+                    imgs = imgs.to(conf.device)
+                    labels = labels.to(conf.device)
+                    self.optimizer.zero_grad()
+                    embeddings = self.model(imgs)
+                    thetas = self.head(embeddings, labels)
+                    loss = conf.ce_loss(thetas, labels)
+                    loss.backward()
+                    running_loss += loss.item()
+                    self.optimizer.step()
+
+                    if self.step % self.board_loss_every == 0 and self.step != 0:
+                        loss_board = running_loss / self.board_loss_every
+                        self.writer.add_scalar('train_loss', loss_board, self.step)
+                        running_loss = 0.
+
+                        grid = torchvision.utils.make_grid(imgs[:65])
+                        grid = denormalize_image(grid)
+                        self.writer.add_image('train_images', grid, self.step, dataformats='HWC')
+                        print("epoch: {}, step: {}, loss: {}".format(e, self.step, loss_board))
+                    # if self.step % self.evaluate_every == 0 and self.step != 0:
+                    #     if conf.data_mode == 'common':
+                    #         for val_name in self.val_dataloaders:
+                    #             val_dataloader, val_issame = self.val_dataloaders[val_name]
+                    #             accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                    #                                                                                      val_dataloader,
+                    #                                                                                      val_issame)
+                    #             self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+                    #     else:
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                    #                                                                    self.agedb_30_issame)
+                    #         self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                    #         self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                    #                                                                    self.cfp_fp_issame)
+                    #         self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+                    #     self.model.train()
+                    # if self.step % self.save_every == 0 and self.step != 0:
+                    #     self.save_state(conf, accuracy)
+
+                    self.step += 1
+
+            accuracies = []
+            if conf.data_mode == 'common':
+                for val_name in self.val_dataloaders:
+                    val_dataloader, val_issame = self.val_dataloaders[val_name]
+                    accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                                                                                             val_dataloader,
+                                                                                             val_issame)
+                    accuracies.append(accuracy)
+                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+            else:
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                                                                           self.agedb_30_issame)
+                self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                                                                           self.cfp_fp_issame)
+                self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+            self.model.train()
+
+            if not conf.train:
+                break
+
+            self.save_state(conf, sum(accuracies) / len(accuracies))
+
+        if conf.train:
+            self.save_state(conf, accuracy, to_save_folder=True, extra='final')
+
     def schedule_lr(self):
         for params in self.optimizer.param_groups:
             params['lr'] /= 10

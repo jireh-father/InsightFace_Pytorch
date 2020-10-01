@@ -99,6 +99,8 @@ if __name__ == '__main__':
     parser.add_argument('--wd', type=float, default=1e-5)
     parser.add_argument('--restore_suffix', default=None, type=str)
 
+    parser.add_argument('--train', default=False, action="store_true")
+
     args = parser.parse_args()
     conf = get_config()
 
@@ -189,4 +191,4 @@ if __name__ == '__main__':
     val_transforms = val_transform_func(input_size=args.input_size, use_gray=args.use_gray)
     learner = face_learner(conf, val_transforms=val_transforms, train_loader=train_loader)
 
-    learner.train(conf, args.epochs)
+    learner.train_font(conf, args.epochs)
