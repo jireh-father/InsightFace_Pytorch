@@ -149,9 +149,6 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
                 pass
         max_positive_cnt = len(positive_files) // 2
         issame += [True] * int(len(positive_files) / 2)
-    print('max_positive_cnt', max_positive_cnt)
-    print(positive_files[:20])
-    print(issame[:20])
     negative_files = []
     if use_neg:
         total_negative_cnt = 0
@@ -172,10 +169,6 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
             negative_files.append(label_files_list[neg_label_idx][neg_item_idx])
             total_negative_cnt += 1
         issame += [False] * int(len(negative_files) / 2)
-    print(negative_files[:20])
-    print(issame[len(positive_files) // 2:len(positive_files) // 2 + 20])
-    print(len(positive_files), len(negative_files), len(issame))
-    sys.exit()
     loader = DataLoader(ValDataset(positive_files + negative_files, val_transforms), batch_size=batch_size,
                         shuffle=False, pin_memory=pin_memory,
                         num_workers=num_workers)
