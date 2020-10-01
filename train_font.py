@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--theta_zero', type=float, default=1.25)
 
     parser.add_argument('--wd', type=float, default=1e-5)
-
+    parser.add_argument('--restore_suffix', default=None, type=str)
 
     args = parser.parse_args()
     conf = get_config()
