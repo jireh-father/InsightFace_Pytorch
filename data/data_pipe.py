@@ -147,7 +147,7 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
                             raise
             except:
                 pass
-        max_positive_cnt = len(positive_files)
+        max_positive_cnt = len(positive_files) // 2
         issame += [True] * int(len(positive_files) / 2)
     print('max_positive_cnt', max_positive_cnt)
     # print(positive_files)
