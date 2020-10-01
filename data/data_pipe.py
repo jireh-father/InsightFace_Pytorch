@@ -118,7 +118,6 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
         raise Exception("use_pos and use_neg all false")
 
     label_dirs = glob.glob(os.path.join(data_path, "*"))
-
     total_positive_cnt = 0
     label_files_list = []
     for label_dir in label_dirs:
@@ -150,7 +149,8 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
                 pass
         max_positive_cnt = len(positive_files)
         issame += [True] * int(len(positive_files) / 2)
-    print(max_positive_cnt)
+    print('max_positive_cnt', max_positive_cnt)
+    print(positive_files)
     print(issame)
     negative_files = []
     if use_neg:
