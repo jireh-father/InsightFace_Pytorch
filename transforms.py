@@ -152,6 +152,42 @@ def get_train_transforms(input_size=None, use_random_crop=False, use_gray=False,
         return al.Compose(compose)
 
 
+def get_train_common_transforms(input_size=None, use_random_crop=False, use_gray=False, only_use_pixel_transform=False,
+                                use_flip=False, use_blur=False, no_transforms=False):
+    if use_random_crop:
+        compose = [al.Resize(int(input_size * 1.1), int(input_size * 1.1)),
+                   al.RandomCrop(input_size, input_size)]
+    else:
+        compose = [al.Resize(input_size, input_size)]
+
+    if no_transforms:
+        return al.Compose(compose +
+                          [
+                              al.Normalize(),
+                              ToTensorV2()
+                          ])
+
+    return al.Compose(compose + _get_train_transforms(use_gray, only_use_pixel_transform, use_flip, use_blur) +
+                      [
+                          al.Normalize(),
+                          ToTensorV2()
+                      ])
+
+
+def get_val_common_transforms(input_size=None, use_random_crop=False, use_gray=False):
+    if use_random_crop:
+        compose = [al.Resize(int(input_size * 1.1), int(input_size * 1.1)),
+                   al.CenterCrop(input_size, input_size)]
+    else:
+        compose = [al.Resize(input_size, input_size)]
+
+    return al.Compose(compose + [
+        al.ToGray(p=1.0 if use_gray else 0.0),
+        al.Normalize(),
+        ToTensorV2()
+    ])
+
+
 def get_simple_transforms(input_size=224, use_random_crop=False, use_same_random_crop_in_batch=False, use_gray=False):
     def resize_image(img, interpolation=cv2.INTER_LINEAR, **params):
         height, width = img.shape[:2]
