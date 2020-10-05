@@ -28,8 +28,8 @@ if __name__ == '__main__':
     parser.add_argument("--val_batch_size", default=256, type=int)
     parser.add_argument('--pin_memory', default=False, action="store_true")
     parser.add_argument("--val_pin_memory", default=False, action='store_true')
-    parser.add_argument("--not_use_pos", default=True, action='store_false')
-    parser.add_argument("--not_use_neg", default=True, action='store_false')
+    parser.add_argument("--not_use_pos", default=False, action='store_false')
+    parser.add_argument("--not_use_neg", default=False, action='store_false')
 
     parser.add_argument('--work_path', type=str, default=None, required=False)
     parser.add_argument('--seed', type=int, default=None)
