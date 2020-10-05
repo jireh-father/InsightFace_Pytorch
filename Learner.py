@@ -119,6 +119,7 @@ class face_learner(object):
                     self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
                 print('optimizers generated')
+                print(len(self.loader))
                 self.board_loss_every = len(self.loader) // 100
                 self.evaluate_every = len(self.loader) // 10
                 self.save_every = len(self.loader) // 5
