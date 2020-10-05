@@ -20,12 +20,12 @@ def de_preprocess(tensor):
 
 def get_train_dataset(imgs_folder, train_transforms=None):
     if not train_transforms:
-        train_transform = trans.Compose([
+        train_transforms = trans.Compose([
             trans.RandomHorizontalFlip(),
             trans.ToTensor(),
             trans.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
-    ds = ImageFolder(imgs_folder, train_transform)
+    ds = ImageFolder(imgs_folder, train_transforms)
     class_num = ds[-1][1] + 1
     return ds, class_num
 

@@ -22,9 +22,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--embedding_size", help="embedding_size", default=512, type=int)
 
-    parser.add_argument("--train_trans_func", default=None, type=str)
-    parser.add_argument("--val_trans_func", default=None, type=str)
-
     parser.add_argument("-t", "--train_img_dir", default=None, type=str)
 
     parser.add_argument("--max_positive_cnt", default=1000, type=int)
