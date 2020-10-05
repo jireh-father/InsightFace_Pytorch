@@ -376,9 +376,12 @@ class face_learner(object):
                 self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
             self.model.train()
 
+            if not conf.train:
+                break
             self.save_state(conf, sum(accuracies) / len(accuracies))
 
-        self.save_state(conf, accuracy, to_save_folder=True, extra='final')
+        if conf.train:
+            self.save_state(conf, accuracy, to_save_folder=True, extra='final')
 
     def train_font(self, conf, epochs):
         self.model.train()
