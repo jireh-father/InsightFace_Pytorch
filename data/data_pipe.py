@@ -166,6 +166,7 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
 
     positive_files = []
     issame = []
+    print("pos", use_pos)
     if use_pos:
         each_cnt = max_positive_cnt / len(label_dirs)
         for label_files in label_files_list:
