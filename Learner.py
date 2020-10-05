@@ -119,7 +119,6 @@ class face_learner(object):
                     self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
                 print('optimizers generated')
-                print(len(self.loader))
                 self.board_loss_every = len(self.loader) // 100
                 self.evaluate_every = len(self.loader) // 10
                 self.save_every = len(self.loader) // 5
@@ -182,8 +181,8 @@ class face_learner(object):
             self.head.load_state_dict(torch.load(save_path / 'head_{}'.format(fixed_str)))
             self.optimizer.load_state_dict(torch.load(save_path / 'optimizer_{}'.format(fixed_str)))
 
-    def board_val(self, db_name, accuracy, best_threshold, roc_curve_tensor):
-        print(db_name, "step", self.step, "accuracy", accuracy, "best_threshold", best_threshold)
+    def board_val(self, db_name, accuracy, best_threshold, roc_curve_tensor, pair_cnt=None):
+        print(db_name, "step", self.step, "accuracy", accuracy, "best_threshold", best_threshold, "pair_cnt", pair_cnt)
         self.writer.add_scalar('{}_accuracy'.format(db_name), accuracy, self.step)
         self.writer.add_scalar('{}_best_threshold'.format(db_name), best_threshold, self.step)
         self.writer.add_image('{}_roc_curve'.format(db_name), roc_curve_tensor, self.step)
@@ -365,7 +364,7 @@ class face_learner(object):
                                                                                              val_dataloader,
                                                                                              val_issame)
                     accuracies.append(accuracy)
-                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensorm, len(val_issame))
             else:
                 accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
                                                                            self.agedb_30_issame)
