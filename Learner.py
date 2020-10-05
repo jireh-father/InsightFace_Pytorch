@@ -115,7 +115,8 @@ class face_learner(object):
                 print(self.optimizer)
                 #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
 
-                self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
+                if conf.restore_suffix:
+                    self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
                 print('optimizers generated')
                 self.board_loss_every = len(self.loader) // 100
