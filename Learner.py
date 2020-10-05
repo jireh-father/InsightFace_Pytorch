@@ -132,6 +132,7 @@ class face_learner(object):
                     self.val_dataloaders = {}
                     for val_name in val_img_dir_map:
                         val_img_dir = val_img_dir_map[val_name]
+                        print('not use pos', not conf.not_use_pos)
                         val_dataloader, common_val_issame = get_common_val_data(val_img_dir,
                                                                                 conf.max_positive_cnt,
                                                                                 conf.val_batch_size,
