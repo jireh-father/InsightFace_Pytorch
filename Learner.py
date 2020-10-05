@@ -132,7 +132,6 @@ class face_learner(object):
                     self.val_dataloaders = {}
                     for val_name in val_img_dir_map:
                         val_img_dir = val_img_dir_map[val_name]
-                        print('not use pos', not conf.not_use_pos)
                         val_dataloader, common_val_issame = get_common_val_data(val_img_dir,
                                                                                 conf.max_positive_cnt,
                                                                                 conf.val_batch_size,
@@ -155,7 +154,6 @@ class face_learner(object):
             save_path = conf.model_path
         import os
         print('save_path', save_path)
-        print('save_path', str(save_path))
         os.makedirs(str(save_path), exist_ok=True)
         torch.save(
             self.model.state_dict(), save_path /
