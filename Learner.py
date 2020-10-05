@@ -59,7 +59,8 @@ class face_learner(object):
             if not inference:
                 self.milestones = conf.milestones
                 if train_loader is None:
-                    self.loader, self.class_num = get_train_loader(conf, train_transforms)
+                    if conf.train:
+                        self.loader, self.class_num = get_train_loader(conf, train_transforms)
                 else:
                     self.loader = train_loader
                     self.class_num = conf.num_classes
