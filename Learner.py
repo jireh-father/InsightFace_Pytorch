@@ -123,6 +123,10 @@ class face_learner(object):
                 self.board_loss_every = len(self.loader) // 100
                 self.evaluate_every = len(self.loader) // 10
                 self.save_every = len(self.loader) // 5
+
+                self.board_loss_every = 20
+                self.evaluate_every = len(self.loader)
+                self.save_every = len(self.loader)
                 if conf.data_mode == 'common':
                     import json
                     val_img_dir_map = json.loads(conf.val_img_dirs)
