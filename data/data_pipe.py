@@ -168,7 +168,7 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
     issame = []
     if use_pos:
         each_cnt = max_positive_cnt / len(label_dirs)
-        for label_files in label_files_list:
+        for label_idx, label_files in enumerate(label_files_list):
             cur_cnt = 0
             try:
                 for i in range(0, len(label_files) - 1):
@@ -179,6 +179,7 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
                         if cur_cnt >= each_cnt:
                             raise
             except:
+                print("val positive label cnt", cur_cnt, os.path.basename(label_dirs[label_idx]))
                 pass
         max_positive_cnt = len(positive_files) // 2
         issame += [True] * int(len(positive_files) / 2)
