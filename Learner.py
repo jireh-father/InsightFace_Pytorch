@@ -115,7 +115,9 @@ class face_learner(object):
                 print(self.optimizer)
                 #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
 
-                if conf.restore_suffix:
+                if conf.ft_model_path:
+                    self.load_ft_model(conf.ft_model_path, not conf.no_strict)
+                elif conf.restore_suffix:
                     self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
                 print('optimizers generated')
@@ -179,6 +181,10 @@ class face_learner(object):
         if not model_only:
             self.head.load_state_dict(torch.load(save_path / 'head_{}'.format(fixed_str)))
             self.optimizer.load_state_dict(torch.load(save_path / 'optimizer_{}'.format(fixed_str)))
+
+    def load_ft_model(self, model_path, strict=False):
+        self.model.load_state_dict(torch.load(model_path), strict=strict)
+
 
     def board_val(self, db_name, accuracy, best_threshold, roc_curve_tensor, pair_cnt=None):
         print(db_name, "step", self.step, "accuracy", accuracy, "best_threshold", best_threshold, "pair_cnt", pair_cnt)

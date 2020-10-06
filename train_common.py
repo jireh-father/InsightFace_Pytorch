@@ -71,6 +71,9 @@ if __name__ == '__main__':
     parser.add_argument('--train', default=False, action="store_true")
     parser.add_argument('--no_transforms', default=False, action="store_true")
 
+    parser.add_argument('--ft_model_path', default=None, type=str)
+    parser.add_argument('--no_strict', default=False, action="store_true")
+
     args = parser.parse_args()
 
     conf = get_config()
