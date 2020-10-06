@@ -68,6 +68,7 @@ class MetricNet(nn.Module):
             self._init_params()
             final_in_features = fc_dim
         self.final_in_features = final_in_features
+        self.model_name = model_name
 
     def _init_params(self):
         nn.init.xavier_normal_(self.fc.weight)
@@ -80,7 +81,10 @@ class MetricNet(nn.Module):
 
     def extract_feat(self, x):
         batch_size = x.shape[0]
-        x = self.backbone(x)
+        if self.model_name.startswith("efficientnet"):
+            x = self.backbone.extract_features(x)
+        else:
+            x = self.backbone(x)
         x = self.pooling(x).view(batch_size, -1)
 
         if self.use_fc:
