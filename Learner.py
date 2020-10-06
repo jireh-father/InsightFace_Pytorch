@@ -406,7 +406,10 @@ class face_learner(object):
                     imgs = imgs.to(conf.device)
                     labels = labels.to(conf.device)
                     self.optimizer.zero_grad()
-                    embeddings = self.model(imgs)
+                    if conf.net_mode.startswith("efficientnet"):
+                        embeddings = self.model.extract_features(imgs)
+                    else:
+                        embeddings = self.model(imgs)
                     thetas = self.head(embeddings, labels)
                     loss = conf.ce_loss(thetas, labels)
                     loss.backward()

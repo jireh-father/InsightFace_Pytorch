@@ -37,19 +37,26 @@ class MetricNet(nn.Module):
             backbone = EfficientNet.from_pretrained(model_name, num_classes=1000)
             last_linear_idx = -2
             pool_idx = -4
+            backbone_layers = list(backbone.children())
+            final_in_features = backbone_layers[last_linear_idx].in_features
+            self.backbone = backbone
         elif model_name.startswith('bagnet'):
             import bagnets.pytorchnet
             backbone = getattr(bagnets.pytorchnet, model_name)(pretrained=pretrained)
             last_linear_idx = -1
             pool_idx = -2
+
+            backbone_layers = list(backbone.children())
+            final_in_features = backbone_layers[last_linear_idx].in_features
+            self.backbone = nn.Sequential(*backbone_layers[:pool_idx])
         else:
             backbone = getattr(models, model_name)(num_classes=1000)
             last_linear_idx = -1
             pool_idx = -2
 
-        backbone_layers = list(backbone.children())
-        final_in_features = backbone_layers[last_linear_idx].in_features
-        self.backbone = nn.Sequential(*backbone_layers[:pool_idx])
+            backbone_layers = list(backbone.children())
+            final_in_features = backbone_layers[last_linear_idx].in_features
+            self.backbone = nn.Sequential(*backbone_layers[:pool_idx])
 
         self.pooling = getattr(cirtorch.pooling, pooling)(**args_pooling)
 
@@ -69,7 +76,6 @@ class MetricNet(nn.Module):
         nn.init.constant_(self.bn.bias, 0)
 
     def forward(self, x):
-        print(x.shape)
         return self.extract_feat(x)
 
     def extract_feat(self, x):
