@@ -453,7 +453,7 @@ class face_learner(object):
                                                                                              val_dataloader,
                                                                                              val_issame)
                     accuracies.append(accuracy)
-                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor, len(val_issame))
             else:
                 accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
                                                                            self.agedb_30_issame)
