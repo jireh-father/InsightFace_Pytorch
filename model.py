@@ -69,6 +69,7 @@ class MetricNet(nn.Module):
         nn.init.constant_(self.bn.bias, 0)
 
     def forward(self, x):
+        print(x.shape)
         return self.extract_feat(x)
 
     def extract_feat(self, x):
