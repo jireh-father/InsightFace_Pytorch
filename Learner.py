@@ -19,7 +19,7 @@ import torchvision
 from metric_learning import ArcMarginProduct, AddMarginProduct, AdaCos
 
 
-def denormalize_image(img, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), is_tensor=True):
+def denormalize_image(img, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), is_tensor=True):
     max_pixel_value = 255.
     mean = np.array(mean, dtype=np.float32)
     mean *= max_pixel_value
