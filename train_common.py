@@ -48,6 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--input_size', type=int, default=112)
 
     parser.add_argument('--use_random_crop', default=False, action="store_true")
+    parser.add_argument('--use_center_crop', default=False, action="store_true")
+    parser.add_argument('--center_crop_ratio', default=0.8, type=float)
     parser.add_argument('--use_gray', default=False, action="store_true")
 
     parser.add_argument('--only_use_pixel_transform', default=False, action="store_true")
@@ -111,11 +113,15 @@ if __name__ == '__main__':
     train_transforms = train_transform_func(args.input_size, args.use_random_crop, args.use_gray,
                                             only_use_pixel_transform=args.only_use_pixel_transform,
                                             use_flip=args.use_flip, use_blur=args.use_blur,
-                                            no_transforms=args.no_transforms
+                                            no_transforms=args.no_transforms,
+                                            use_center_crop=args.use_center_crop,
+                                            center_crop_ratio=args.center_crop_ratio
                                             )
 
     val_transform_func = getattr(transforms, args.val_transform_func_name)
-    val_transforms = val_transform_func(input_size=args.input_size, use_gray=args.use_gray)
+    val_transforms = val_transform_func(input_size=args.input_size, use_gray=args.use_gray,
+                                        use_center_crop=args.use_center_crop,
+                                        center_crop_ratio=args.center_crop_ratio)
 
     learner = face_learner(conf, train_transforms=train_transforms, val_transforms=val_transforms)
 

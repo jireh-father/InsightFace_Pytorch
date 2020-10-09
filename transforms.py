@@ -153,10 +153,15 @@ def get_train_transforms(input_size=None, use_random_crop=False, use_gray=False,
 
 
 def get_train_common_transforms(input_size=None, use_random_crop=False, use_gray=False, only_use_pixel_transform=False,
-                                use_flip=False, use_blur=False, no_transforms=False):
+                                use_flip=False, use_blur=False, no_transforms=False,
+                                use_center_crop=False,
+                                center_crop_ratio=0.8):
     if use_random_crop:
         compose = [al.Resize(int(input_size * 1.1), int(input_size * 1.1)),
                    al.RandomCrop(input_size, input_size)]
+    elif use_center_crop:
+        compose = [al.Resize(int(input_size * (2.0 - center_crop_ratio)), int(input_size * (2.0 - center_crop_ratio))),
+                   al.CenterCrop(input_size, input_size)]
     else:
         compose = [al.Resize(input_size, input_size)]
 
@@ -174,9 +179,14 @@ def get_train_common_transforms(input_size=None, use_random_crop=False, use_gray
                       ])
 
 
-def get_val_common_transforms(input_size=None, use_random_crop=False, use_gray=False):
+def get_val_common_transforms(input_size=None, use_random_crop=False, use_gray=False,
+                              use_center_crop=False,
+                              center_crop_ratio=0.8):
     if use_random_crop:
         compose = [al.Resize(int(input_size * 1.1), int(input_size * 1.1)),
+                   al.CenterCrop(input_size, input_size)]
+    elif use_center_crop:
+        compose = [al.Resize(int(input_size * (2.0 - center_crop_ratio)), int(input_size * (2.0 - center_crop_ratio))),
                    al.CenterCrop(input_size, input_size)]
     else:
         compose = [al.Resize(input_size, input_size)]
