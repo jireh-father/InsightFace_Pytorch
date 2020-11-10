@@ -143,6 +143,9 @@ class face_learner(object):
                                                                                 use_pos=not conf.not_use_pos,
                                                                                 use_neg=not conf.not_use_neg)
                         self.val_dataloaders[val_name] = [val_dataloader, common_val_issame]
+                elif conf.data_mode == 'dacon_landmark':
+
+                    pass
                 else:
                     self.agedb_30, self.cfp_fp, self.lfw, self.agedb_30_issame, self.cfp_fp_issame, self.lfw_issame = get_val_data(
                         self.loader.dataset.root.parent)

@@ -63,9 +63,64 @@ def get_custom_train_dataset(imgs_folder, train_transforms=None):
     return ds, class_num
 
 
+def get_dacon_landmark_train_dataset(imgs_folder, train_transforms=None, label_file=None):
+    import torch
+    import json
+    import os
+    import glob
+
+    class CustomDataset(torch.utils.data.Dataset):
+        """__init__ and __len__ functions are the same as in TorchvisionDataset"""
+
+        def __init__(self, root, transform=None, label_file=None):
+            self.transform = transform
+            labels = json.load(open(label_file))
+            label_map = {}
+            for label in labels['categories']:
+                label_map[label['landmark_name']] = label['landmark_id']
+
+            samples = []
+            for dir in glob.glob(os.path.join(root, '*')):
+                label_name = os.path.basename(dir)
+                label_idx = label_map[label_name]
+                for path in glob.glob(os.path.join(dir, "*")):
+                    samples.append([path, label_idx])
+            self.samples = samples
+
+        def __getitem__(self, index):
+            """
+            Args:
+                index (int): Index
+
+            Returns:
+                tuple: (sample, target) where target is class_index of the target class.
+            """
+
+            while True:
+                try:
+                    path, target = self.samples[index]
+                    sample = np.array(Image.open(path).convert("RGB"))
+                    if self.transform is not None:
+                        sample = self.transform(image=sample)['image']
+                    return sample, target
+                except Exception as e:
+                    # traceback.print_exc()
+                    print(str(e), path)
+                    index = random.randint(0, len(self) - 1)
+
+        def __len__(self):
+            return len(self.samples)
+
+    ds = CustomDataset(imgs_folder, train_transforms, label_file)
+    class_num = ds[-1][1] + 1
+    return ds, class_num
+
+
 def get_train_loader(conf, train_transforms=None):
     if conf.data_mode == 'common':
         ds, class_num = get_custom_train_dataset(conf.train_img_dir, train_transforms)
+    elif conf.data_mode == 'dacon_landmark':
+        ds, class_num = get_custom_train_dataset(conf.train_img_dir, train_transforms, conf.label_file)
     else:
         if conf.data_mode in ['ms1m', 'concat']:
             ms1m_ds, ms1m_class_num = get_train_dataset(conf.ms1m_folder / 'imgs')
