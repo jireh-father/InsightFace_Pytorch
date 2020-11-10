@@ -325,6 +325,7 @@ class face_learner(object):
                     self.optimizer.zero_grad()
                     embeddings = self.model(imgs)
                     thetas = self.head(embeddings, labels)
+                    print(thetas.shape)
                     loss = conf.ce_loss(thetas, labels)
                     loss.backward()
                     running_loss += loss.item()
