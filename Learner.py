@@ -341,7 +341,7 @@ class face_learner(object):
                         grid = torchvision.utils.make_grid(imgs[:65])
                         grid = denormalize_image(grid)
                         self.writer.add_image('train_images', grid, self.step, dataformats='HWC')
-                        print("epoch: {}, step: {}, loss: {}".format(e, self.step, loss_board))
+                        print("epoch: {}, step: {}/{}, loss: {}".format(e, self.step, len(self.loader), loss_board))
                     # if self.step % self.evaluate_every == 0 and self.step != 0:
                     #     if conf.data_mode == 'common':
                     #         for val_name in self.val_dataloaders:
