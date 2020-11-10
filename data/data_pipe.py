@@ -250,7 +250,8 @@ def get_common_val_data(data_path, max_positive_cnt, batch_size, pin_memory, num
             while target_label_idx == neg_label_idx:
                 neg_label_idx = random.randint(0, len(label_files_list) - 1)
 
-            print(len(label_files_list[neg_label_idx]) - 1)
+            if len(label_files_list[neg_label_idx] < 1:
+                continue
             neg_item_idx = random.randint(0, len(label_files_list[neg_label_idx]) - 1)
 
             if "{}_{}_{}_{}".format(target_label_idx, target_item_idx, neg_label_idx, neg_item_idx) in idx_map:
