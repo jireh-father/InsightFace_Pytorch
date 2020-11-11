@@ -68,7 +68,7 @@ class MetricNet(nn.Module):
         if use_fc:
             self.dropout = nn.Dropout(p=dropout)
             self.fc = nn.Linear(final_in_features * 3, fc_dim)
-            self.fc2 = nn.Linear(final_in_features * 3, class_num)
+            self.fc2 = nn.Linear(fc_dim, class_num)
             self.bn = nn.BatchNorm1d(fc_dim)
             self.bn2 = nn.BatchNorm1d(class_num)
             self._init_params()
@@ -103,10 +103,10 @@ class MetricNet(nn.Module):
 
         if self.use_fc:
             x = self.dropout(x)
-            x2 = self.fc2(x)
-            x2 = self.bn2(x2)
             x = self.fc(x)
             x = self.bn(x)
+            x2 = self.fc2(x)
+            x2 = self.bn2(x2)
 
         return x, x2
 
