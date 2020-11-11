@@ -58,7 +58,11 @@ class MetricNet(nn.Module):
             final_in_features = backbone_layers[last_linear_idx].in_features
             self.backbone = nn.Sequential(*backbone_layers[:pool_idx])
 
-        self.pooling = getattr(cirtorch.pooling, pooling)(**args_pooling)
+        self.pooling1 = getattr(cirtorch.pooling, 'GeM')(**args_pooling)
+        self.pooling2 = getattr(cirtorch.pooling, 'RMAC')(**args_pooling)
+        self.pooling3 = getattr(cirtorch.pooling, 'SPoC')(**args_pooling)
+        self.pooling4 = getattr(cirtorch.pooling, 'Rpool')(**args_pooling)
+        # self.pooling = getattr(cirtorch.pooling, pooling)(**args_pooling)
 
         self.use_fc = use_fc
         if use_fc:
@@ -85,7 +89,12 @@ class MetricNet(nn.Module):
             x = self.backbone.extract_features(x)
         else:
             x = self.backbone(x)
-        x = self.pooling(x).view(batch_size, -1)
+        x1 = self.pooling1(x).view(batch_size, -1)
+        x2 = self.pooling2(x).view(batch_size, -1)
+        x3 = self.pooling3(x).view(batch_size, -1)
+        x4 = self.pooling4(x).view(batch_size, -1)
+
+        x = torch.cat([x1, x2, x3, x4], dim=1)
 
         if self.use_fc:
             x = self.dropout(x)

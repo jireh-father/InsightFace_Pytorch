@@ -126,4 +126,4 @@ if __name__ == '__main__':
 
     learner = face_learner(conf, train_transforms=train_transforms, val_transforms=val_transforms)
 
-    learner.train(conf, args.epochs)
+    learner.train_landmark(conf, args.epochs)

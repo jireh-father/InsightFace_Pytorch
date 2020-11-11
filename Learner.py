@@ -18,7 +18,7 @@ import bcolz
 import torchvision
 from metric_learning import ArcMarginProduct, AddMarginProduct, AdaCos
 
-
+from torch.nn import functional as F
 def denormalize_image(img, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), is_tensor=True):
     max_pixel_value = 255.
     mean = np.array(mean, dtype=np.float32)
@@ -56,6 +56,28 @@ class face_learner(object):
                                        pretrained=conf.pretrained).to(conf.device)
                 print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
 
+            if conf.use_mobilfacenet or conf.net_mode in ['ir', 'ir_se']:
+                self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
+            else:
+                if conf.loss_module == 'arcface':
+                    self.head = ArcMarginProduct(self.model.final_in_features, self.class_num,
+                                                 s=conf.s, m=conf.margin, easy_margin=False, ls_eps=conf.ls_eps).to(
+                        conf.device)
+                elif conf.loss_module == 'cosface':
+                    self.head = AddMarginProduct(self.model.final_in_features, self.class_num, s=conf.s,
+                                                 m=conf.margin).to(conf.device)
+                elif conf.loss_module == 'adacos':
+                    self.head = AdaCos(self.model.final_in_features, self.class_num, m=conf.margin,
+                                       theta_zero=conf.theta_zero).to(conf.device)
+                else:
+                    self.head = nn.Linear(self.model.final_in_features, self.class_num).to(conf.device)
+
+            print('two model heads generated')
+            if conf.ft_model_path:
+                self.load_ft_model(conf.ft_model_path, not conf.no_strict)
+            elif conf.restore_suffix:
+                self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
+
             if not inference:
                 self.milestones = conf.milestones
                 if train_loader is None:
@@ -67,23 +89,6 @@ class face_learner(object):
                 self.writer = SummaryWriter(conf.log_path)
                 self.step = 0
 
-                if conf.use_mobilfacenet or conf.net_mode in ['ir', 'ir_se']:
-                    self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
-                else:
-                    if conf.loss_module == 'arcface':
-                        self.head = ArcMarginProduct(self.model.final_in_features, self.class_num,
-                                                     s=conf.s, m=conf.margin, easy_margin=False, ls_eps=conf.ls_eps).to(conf.device)
-                    elif conf.loss_module == 'cosface':
-                        self.head = AddMarginProduct(self.model.final_in_features, self.class_num, s=conf.s,
-                                                     m=conf.margin).to(conf.device)
-                    elif conf.loss_module == 'adacos':
-                        self.head = AdaCos(self.model.final_in_features, self.class_num, m=conf.margin,
-                                           theta_zero=conf.theta_zero).to(conf.device)
-                    else:
-                        self.head = nn.Linear(self.model.final_in_features, self.class_num).to(conf.device)
-
-                print('two model heads generated')
-
                 paras_only_bn, paras_wo_bn = separate_bn_paras(self.model)
 
                 if conf.use_mobilfacenet:
@@ -94,19 +99,19 @@ class face_learner(object):
                     ]
                     wd = 4e-5
                 else:
-                    if conf.net_mode in ['ir', 'ir_se']:
-                        params = [
-                            {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
-                            {'params': paras_only_bn}
-                        ]
-                        wd = 5e-4
-                    else:
-                        params = self.model.parameters()
-                        wd = conf.wd
-                        # params = [
-                        #     {'params': paras_wo_bn + [self.head.weight], 'weight_decay': conf.wd},  # 5e-4},
-                        #     {'params': paras_only_bn}
-                        # ]
+                    # if conf.net_mode in ['ir', 'ir_se']:
+                    params = [
+                        {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
+                        {'params': paras_only_bn}
+                    ]
+                    wd = 5e-4
+                    # else:
+                    #     params = self.model.parameters()
+                    #     wd = conf.wd
+                    #     # params = [
+                    #     #     {'params': paras_wo_bn + [self.head.weight], 'weight_decay': conf.wd},  # 5e-4},
+                    #     #     {'params': paras_only_bn}
+                    #     # ]
 
                 if conf.optimizer == 'sgd':
                     self.optimizer = optim.SGD(params, lr=conf.lr, momentum=conf.momentum, weight_decay=wd)
@@ -114,11 +119,6 @@ class face_learner(object):
                     self.optimizer = optim.Adam(params, lr=conf.lr, weight_decay=wd)
                 print(self.optimizer)
                 #             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=40, verbose=True)
-
-                if conf.ft_model_path:
-                    self.load_ft_model(conf.ft_model_path, not conf.no_strict)
-                elif conf.restore_suffix:
-                    self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
                 print('optimizers generated')
                 self.board_loss_every = len(self.loader) // 100
@@ -187,7 +187,6 @@ class face_learner(object):
 
     def load_ft_model(self, model_path, strict=False):
         self.model.load_state_dict(torch.load(model_path), strict=strict)
-
 
     def board_val(self, db_name, accuracy, best_threshold, roc_curve_tensor, pair_cnt=None):
         print(db_name, "step", self.step, "accuracy", accuracy, "best_threshold", best_threshold, "pair_cnt", pair_cnt)
@@ -329,6 +328,91 @@ class face_learner(object):
                     embeddings = self.model(imgs)
                     thetas = self.head(embeddings, labels)
                     loss = conf.ce_loss(thetas, labels)
+                    loss.backward()
+                    running_loss += loss.item()
+                    self.optimizer.step()
+
+                    if self.step % self.board_loss_every == 0 and self.step != 0:
+                        loss_board = running_loss / self.board_loss_every
+                        self.writer.add_scalar('train_loss', loss_board, self.step)
+                        running_loss = 0.
+
+                        grid = torchvision.utils.make_grid(imgs[:65])
+                        grid = denormalize_image(grid)
+                        self.writer.add_image('train_images', grid, self.step, dataformats='HWC')
+                        print("epoch: {}, step: {}/{}, loss: {}".format(e, self.step, len(self.loader), loss_board))
+                    # if self.step % self.evaluate_every == 0 and self.step != 0:
+                    #     if conf.data_mode == 'common':
+                    #         for val_name in self.val_dataloaders:
+                    #             val_dataloader, val_issame = self.val_dataloaders[val_name]
+                    #             accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                    #                                                                                      val_dataloader,
+                    #                                                                                      val_issame)
+                    #             self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor)
+                    #     else:
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                    #                                                                    self.agedb_30_issame)
+                    #         self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                    #         self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                    #         accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                    #                                                                    self.cfp_fp_issame)
+                    #         self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+                    #     self.model.train()
+                    # if self.step % self.save_every == 0 and self.step != 0:
+                    #     self.save_state(conf, accuracy)
+
+                    self.step += 1
+
+            accuracies = []
+            if conf.data_mode == 'common':
+                for val_name in self.val_dataloaders:
+                    val_dataloader, val_issame = self.val_dataloaders[val_name]
+                    accuracy, best_threshold, roc_curve_tensor = self.evaluate_by_dataloader(conf,
+                                                                                             val_dataloader,
+                                                                                             val_issame)
+                    accuracies.append(accuracy)
+                    self.board_val(val_name, accuracy, best_threshold, roc_curve_tensor, len(val_issame))
+            else:
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.agedb_30,
+                                                                           self.agedb_30_issame)
+                self.board_val('agedb_30', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.lfw, self.lfw_issame)
+                self.board_val('lfw', accuracy, best_threshold, roc_curve_tensor)
+                accuracy, best_threshold, roc_curve_tensor = self.evaluate(conf, self.cfp_fp,
+                                                                           self.cfp_fp_issame)
+                self.board_val('cfp_fp', accuracy, best_threshold, roc_curve_tensor)
+            self.model.train()
+
+            if not conf.train:
+                break
+            self.save_state(conf, sum(accuracies) / len(accuracies))
+
+        if conf.train:
+            self.save_state(conf, accuracy, to_save_folder=True, extra='final')
+
+    def train_landmark(self, conf, epochs):
+        self.model.train()
+        running_loss = 0.
+        for e in range(epochs):
+            if conf.train:
+                print('epoch {} started'.format(e))
+                if e == self.milestones[0]:
+                    self.schedule_lr()
+                if e == self.milestones[1]:
+                    self.schedule_lr()
+                if e == self.milestones[2]:
+                    self.schedule_lr()
+                # for imgs, labels in tqdm(iter(self.loader)):
+                for imgs, labels in self.loader:
+                    imgs = imgs.to(conf.device)
+                    labels = labels.to(conf.device)
+                    self.optimizer.zero_grad()
+                    embeddings = self.model(imgs)
+                    loss_prev = conf.ce_loss(embeddings, labels)
+                    thetas = self.head(embeddings, labels)
+                    loss = conf.ce_loss(thetas, labels)
+                    loss += loss_prev
                     loss.backward()
                     running_loss += loss.item()
                     self.optimizer.step()
