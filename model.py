@@ -22,7 +22,8 @@ class MetricNet(nn.Module):
                  use_fc=True,
                  fc_dim=512,
                  dropout=0.0,
-                 pretrained=False):
+                 pretrained=False,
+                 class_num=None):
         """
         :param n_classes:
         :param model_name: name of model from pretrainedmodels
@@ -66,8 +67,10 @@ class MetricNet(nn.Module):
         self.use_fc = use_fc
         if use_fc:
             self.dropout = nn.Dropout(p=dropout)
-            self.fc = nn.Linear(final_in_features*3, fc_dim)
+            self.fc = nn.Linear(final_in_features * 3, fc_dim)
+            self.fc2 = nn.Linear(final_in_features * 3, class_num)
             self.bn = nn.BatchNorm1d(fc_dim)
+            self.bn2 = nn.BatchNorm1d(class_num)
             self._init_params()
             final_in_features = fc_dim
         self.final_in_features = final_in_features
@@ -75,9 +78,13 @@ class MetricNet(nn.Module):
 
     def _init_params(self):
         nn.init.xavier_normal_(self.fc.weight)
+        nn.init.xavier_normal_(self.fc2.weight)
         nn.init.constant_(self.fc.bias, 0)
         nn.init.constant_(self.bn.weight, 1)
         nn.init.constant_(self.bn.bias, 0)
+        nn.init.constant_(self.fc2.bias, 0)
+        nn.init.constant_(self.bn2.weight, 1)
+        nn.init.constant_(self.bn2.bias, 0)
 
     def forward(self, x):
         return self.extract_feat(x)
@@ -98,8 +105,10 @@ class MetricNet(nn.Module):
             x = self.dropout(x)
             x = self.fc(x)
             x = self.bn(x)
+            x2 = self.fc2(x)
+            x2 = self.bn2(x2)
 
-        return x
+        return x, x2
 
 
 ##################################  Original Arcface Model #############################################################

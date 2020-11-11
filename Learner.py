@@ -46,6 +46,15 @@ class face_learner(object):
             self.model = MobileFaceNet(conf.embedding_size).to(conf.device)
             print('MobileFaceNet model generated')
         else:
+
+            self.milestones = conf.milestones
+            if train_loader is None:
+                self.loader, self.class_num = get_train_loader(conf, train_transforms)
+            else:
+                self.loader = train_loader
+                self.class_num = conf.num_classes
+
+
             if conf.net_mode in ['ir', 'ir_se']:
                 self.model = Backbone(conf.net_depth, conf.drop_ratio, conf.net_mode).to(conf.device)
             else:
@@ -55,15 +64,9 @@ class face_learner(object):
                                        use_fc=True,
                                        fc_dim=conf.embedding_size,
                                        dropout=conf.last_fc_dropout,
-                                       pretrained=conf.pretrained).to(conf.device)
+                                       pretrained=conf.pretrained,
+                                       class_num=self.class_num).to(conf.device)
                 print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
-
-            self.milestones = conf.milestones
-            if train_loader is None:
-                self.loader, self.class_num = get_train_loader(conf, train_transforms)
-            else:
-                self.loader = train_loader
-                self.class_num = conf.num_classes
 
             if conf.use_mobilfacenet or conf.net_mode in ['ir', 'ir_se']:
                 self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
@@ -411,8 +414,8 @@ class face_learner(object):
                     imgs = imgs.to(conf.device)
                     labels = labels.to(conf.device)
                     self.optimizer.zero_grad()
-                    embeddings = self.model(imgs)
-                    loss_prev = conf.ce_loss(embeddings, labels)
+                    embeddings, output = self.model(imgs)
+                    loss_prev = conf.ce_loss(output, labels)
                     thetas = self.head(embeddings, labels)
                     loss = conf.ce_loss(thetas, labels)
                     loss += loss_prev
