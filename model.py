@@ -103,10 +103,10 @@ class MetricNet(nn.Module):
 
         if self.use_fc:
             x = self.dropout(x)
-            x = self.fc(x)
-            x = self.bn(x)
             x2 = self.fc2(x)
             x2 = self.bn2(x2)
+            x = self.fc(x)
+            x = self.bn(x)
 
         return x, x2
 
