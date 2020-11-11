@@ -19,6 +19,8 @@ import torchvision
 from metric_learning import ArcMarginProduct, AddMarginProduct, AdaCos
 
 from torch.nn import functional as F
+
+
 def denormalize_image(img, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), is_tensor=True):
     max_pixel_value = 255.
     mean = np.array(mean, dtype=np.float32)
@@ -56,6 +58,13 @@ class face_learner(object):
                                        pretrained=conf.pretrained).to(conf.device)
                 print('{}_{} model generated'.format(conf.net_mode, conf.net_depth))
 
+            self.milestones = conf.milestones
+            if train_loader is None:
+                self.loader, self.class_num = get_train_loader(conf, train_transforms)
+            else:
+                self.loader = train_loader
+                self.class_num = conf.num_classes
+
             if conf.use_mobilfacenet or conf.net_mode in ['ir', 'ir_se']:
                 self.head = Arcface(embedding_size=conf.embedding_size, classnum=self.class_num).to(conf.device)
             else:
@@ -79,12 +88,6 @@ class face_learner(object):
                 self.load_state(conf, conf.restore_suffix, from_save_folder=False, model_only=False)
 
             if not inference:
-                self.milestones = conf.milestones
-                if train_loader is None:
-                    self.loader, self.class_num = get_train_loader(conf, train_transforms)
-                else:
-                    self.loader = train_loader
-                    self.class_num = conf.num_classes
 
                 self.writer = SummaryWriter(conf.log_path)
                 self.step = 0
