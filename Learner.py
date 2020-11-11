@@ -104,7 +104,7 @@ class face_learner(object):
                 else:
                     # if conf.net_mode in ['ir', 'ir_se']:
                     params = [
-                        {'params': paras_wo_bn + [self.head.kernel], 'weight_decay': 5e-4},
+                        {'params': paras_wo_bn + [self.head.weight], 'weight_decay': 5e-4},
                         {'params': paras_only_bn}
                     ]
                     wd = 5e-4
