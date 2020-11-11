@@ -66,7 +66,7 @@ class MetricNet(nn.Module):
         self.use_fc = use_fc
         if use_fc:
             self.dropout = nn.Dropout(p=dropout)
-            self.fc = nn.Linear(final_in_features, fc_dim)
+            self.fc = nn.Linear(final_in_features*3, fc_dim)
             self.bn = nn.BatchNorm1d(fc_dim)
             self._init_params()
             final_in_features = fc_dim
