@@ -244,8 +244,8 @@ class face_learner(object):
                     grid = torchvision.utils.make_grid(imgs[:65])
                     grid = denormalize_image(grid)
                     self.writer.add_image('val_images', grid, self.step, dataformats='HWC')
-
-                embeddings[idx:idx + len(imgs)] = self.model(imgs.to(conf.device)).cpu()
+                tmp_embed, _ = self.model(imgs.to(conf.device))
+                embeddings[idx:idx + len(imgs)] = tmp_embed.cpu()
                 idx += len(imgs)
         tpr, fpr, accuracy, best_thresholds = evaluate(embeddings, val_issame, nrof_folds)
         buf = gen_plot(fpr, tpr)
